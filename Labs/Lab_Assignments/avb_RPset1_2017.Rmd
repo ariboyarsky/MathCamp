@@ -11,29 +11,6 @@ output:
     toc: yes
 ---
 
-#Instructions
-
-Please print and submit a hardcopy of your completed problem set (the knitted .pdf) in class, 9:00AM Tuesday, September 12, 2017. Late submissions will not be accepted. *Note*: please do *not* email files. It will be easier to grade your problem sets if given the hardcopy.
-
-Please do the following problems. When you see a line of code like `set.seed(123)`, just leave it.  It is to make your assignments more easily comparable from student to student.
-
-### How to do this problem set
-
-You will get more out of this if you try the assignment on your own first. If you get stuck, search online for a solution. The best way to do this is to google your error messages, or describe what you're trying to do, along with the letter R.  For instance, "how do I create a data frame in R?" or "Error in \`[.data.frame\`(dat, 4) : undefined columns selected." If you get stuck, team work is permitted, but you must write up your own solutions.  
-
-R code goes in code chunks like this:
-```{r}
-print("Hello World")
-```
-
-They begin with three backticks (the key below the escape key in the upper left part of your keyboard) and {r}. They end with three backticks, so that the markdown compiler knows to go back to printing text, rather than evaluating your code. You may in the future want to pass additional arguments to knitr (the engine that compiles R markdown documents) by including additional arguments in the curly braces. For now, you can use the defaults. A keyboard shortcut for creating a new code chunk is Command-Option-I (Mac) or Control-Alt-I (Windows).
-
-Put your solutions below the questions in this .Rmd file. It is a good practice to periodically compile the document using the "Knit PDF" button. This lets you check on whether the document has any errors in it.  
-
-You should also test your code as you are writing it by pressing Command-Enter (Mac) or Ctrl-Enter (Windows). If you have code selected, it will run that block of code. If you do not have any code selected, it will run the line of code where your cursor is.
-
----
-
 ## Part 1 
 
 ### Problem 1: Working with For Loops
@@ -55,29 +32,139 @@ dat[,3] <- x * x
 colnames(dat) <- c("x", "x.plus", "x.multiply")
 ```
 
-a) Using a for loop, add a fourth column---"dev"---to your data frame that computes for each row $j$ the average absolute deviation from the mean of each row: $\frac{1}{3}\sum\limits_{j=1}^{3}|x_{ij}-\bar{x}_j|$. 
+a) Using a for loop, add a fourth column---"dev"---to your data frame that computes for each row $j$ the average absolute deviation from the mean of each row: $\frac{1}{3}\sum\limits_{j=1}^{3}|x_{ij}-\bar{x}_j|$.
+
+```{r, echo=TRUE}
+res <- data.frame(nrow(dat))
+
+for (j in 1:nrow(dat)){
+  s = 0
+  m <- rowMeans(dat[j,])
+  for(i in 1:ncol(dat)){
+    s <- abs((dat[j,i] - m)) + s
+  }
+ res[j,] <- 1/3*s
+}
+dat[,"dev"] <- res
+```
 
 b) Create a vector "months" that contains the first four months of the year.
 
+```{r, echo=TRUE}
+months <- as.vector(c("January", "Feburary", "March", "April"))
+```
+
 c) Add a fifth column---"month"---to your data frame that randomly assigns one of the four elements in the vector "months" to each observation. Start your code with the command "set.seed(123)".
 
-```{r}
+```{r, echo = TRUE}
 set.seed(123)
+m <- data.frame(nrow(dat))
+for(i in 1:nrow(dat)){
+  m[i,] <- sample(months, 1)
+}
+dat[,"months"] <- m
 ```
 
 d) Using for loops, compute the means of the first (x) and fourth columns (dev) separately for each month. That is, you will compute eight different values (i.e., first column mean for January, fourth column mean for January, first column mean for February, fourth column mean for February, and so forth). Repeat this exercise with medians. 
+```{r, echo=TRUE}
+# subser b.c. this is painless
+jan <- subset(dat, months == "January")
+feb <- subset(dat, months == "Feburary")
+mar <- subset(dat, months == "March")
+apr <- subset(dat, months == "April")
+
+# if we felt like being 'rigorous' we could do the above as such:
+jans <- data.frame()
+for (i in 1:nrow(dat)){
+  if(dat[i,"months"] == "January"){
+    jans <- rbind(jans, dat[i,])
+  }
+}
+febs <- data.frame()
+for (i in 1:nrow(dat)){
+  if(dat[i,"months"] == "Feburary"){
+    febs <- rbind(febs, dat[i,])
+  }
+}
+mars <- data.frame()
+for (i in 1:nrow(dat)){
+  if(dat[i,"months"] == "March"){
+    mars <- rbind(mars, dat[i,])
+  }
+}
+aprs <- data.frame()
+for (i in 1:nrow(dat)){
+  if(dat[i,"months"] == "April"){
+    aprs <- rbind(aprs, dat[i,])
+  }
+}
+
+
+#x's
+colMeans(jan['x'])
+colMeans(feb['x'])
+colMeans(mar['x'])
+colMeans(apr['x'])
+#devs
+colMeans(jan['dev'])
+colMeans(feb['dev'])
+colMeans(mar['dev'])
+colMeans(apr['dev'])
+
+#meds
+lapply(jan['x'], FUN = median)
+lapply(feb['x'], FUN = median)
+lapply(mar['x'], FUN = median)
+lapply(apr['x'], FUN = median)
+
+# med devs
+lapply(jan['dev'], FUN = median)
+lapply(feb['dev'], FUN = median)
+lapply(mar['dev'], FUN = median)
+lapply(apr['dev'], FUN = median)
+
+```
 
 e) **BONUS**: We have not covered plotting in the first R lab yet. Therefore, this problem is completely optional and please do not worry if you decide not to solve it. However, the help function or the internet will be helpful to solve this problem. Use the "hist()" function to produce a histogram of the dev variable. Next, produce a scatterplot of the x.multiply (vertical axis) against the x variable (horizontal axis). For both plots, add an informative plot title and label both x and y axes.
+
+```{r, echo = TRUE}
+hist(dat$dev)
+plot(dat$x, dat$x.multiply)
+```
 
 
 ### Problem 2: Writing Functions
 
 a) Load the R Data Frame "dta.Rdata". Figure out what this object is called using the ls() function, use head() to look at the data. It may be helpful to remove other objects in your workspace using rm(list=ls()).
 
+```{r, echo = TRUE}
+rm(list=ls())
+load("C:/Users/ariboyarsky/Documents/Grad School/Math Camp/MathCamp/Labs/data/dta.Rdata")
+ls() #it's called dta
+head(dta)
+```
+
 b) Write a function called "average" to take the mean of the variable "independent.variable" in the data frame. This function should take a data frame as an input and return the average value of "independent.variable" in the data frame it is supplied with. Do **not** use R's "mean" function to perform this calculation. Instead, write your own function to do so. What is the mean of the "independent.variable" column in this data frame? Does this value correspond with the result you obtain when using R's canned "mean" function? Use a logic statement to answer this last question.
+```{r, echo=TRUE}
+average <- function(df){
+  return(sum(df$"independent.variable")/length(df$"independent.variable"))
+}
+mean(dta$"independent.variable")
+average(dta)
+```
 
 c) Write a second function, "average.two.obs" to take the mean of the variable "independent.variable" based on only the first two observations in the data frame that is passed to it. This function should return the average value of "independent.variable" based on just these two observations. What is the resulting estimate of the mean you obtain when you use this function on the data frame? Does this value correspond with the result you obtain when using R's canned "mean" function? Use a logic statement to answer this last question.
 
+```{r, echo=TRUE}
+average.two.obs <- function(df){
+  return(sum(df[0:2,]$"independent.variable")/2)
+}
+
+#double check
+if (average.two.obs(dta) == mean(dta[0:2,]$independent.variable)){
+  print(TRUE)
+}
+```
 
 ### Problem 3: Combining Loops and Functions to Evaluate Consistency of Estimators
 
@@ -93,9 +180,35 @@ set.seed(8989)
 
 a) Write a loop that applies the "average" and "average.two.obs" functions to an increasingly large portion of the overall dataframe. Specifically, apply your functions to every sample size between 10 and 500, in increments of 10. That is, start by applying the functions to the first ten rows of the dataframe only and save the resulting averages. Then apply the functions to the first 20 rows and save the resulting averages, and so forth until you include the first 500 rows of the data frame. Display the head `head(averages.part2)` `head(averages.two.obs.part2)` of both vectors created by the loop.
 
+```{r, echo = TRUE}
+i <- 10
+averages.part2 <- data.frame()
+averages.two.obs.part2 <- data.frame()
+while(i<=500){
+  df <- dta[sample(nrow(dta), i), ]
+  averages.part2 <- append(averages.part2, average(df))
+  averages.two.obs.part2 <- append(averages.two.obs.part2, average.two.obs(df))
+  i <- i+10
+}
+head(averages.part2)
+head(averages.two.obs.part2)
+```
+
 b) Plot the resulting information. On the x-axis plot the sample size used to estimate the mean (e.g., the first mean will be at 10 on the x-axis, the second at 20, and so on). On the y-axis plot the resulting estimate. Rather than points, plot these values as a solid line. On the same plot, graph the estimates from "average.two.obs" on the same plot using a line of a different color. Produce a title and label each of the axes in your plot. How does this compare to the true value we were supposed to get, 25? Draw a horizontal line at 25. 
 
+```{r, echo = TRUE}
+plot(1:length(averages.part2), averages.part2, type="l", xlab = "Sample Size", ylab = "Estimate", main = "Mean Samples Plot")
+abline(h=25)
+```
+```{r, echo = TRUE}
+plot(1:length(averages.two.obs.part2), averages.two.obs.part2, type="l", xlab = "Sample Size", ylab = "Estimate", main = "Mean Samples Plot of 2 Obs")
+abline(h=25)
+```
+Certainly the estimates lfoat around the true mean. Which makes sense.
+
 c) If an estimator gets closer to the value it is trying to estimate as the sample it is applied to grows in size, we call it consistent. Do either of these estimators appear to be consistent based on your graph?
+
+A: The first estimator appears consistent. This makes sense because this estimator consistently increases the sample size. This is not true of the second estimator which only looks at 2 obs.
 
 ---
 
@@ -124,39 +237,117 @@ To do this, we are going to have you read in a real, uncleaned data set, clean i
 
 1) Read in the "commoncontent2012.RData" data, which is the raw 2012 CCES data. Relabel this data frame "dd". Check the dimensions and examine the first few rows of the data. You will notice that all of these variables do not have intuitive names, and some of them contain weird values. So next we will need to pre-process these data.
 
+```{r, echo=TRUE}
+load("../data/commoncontent2012.RData")
+dd <- x
+rm(x)
+names(dd)
+```
+
 2) We first want to identify the party of the respondents in these data. Let's make a new variable (i.e., a new column in our data frame) called "dem" that takes a 1 if a respondent self-identified as a Democrat (see pid3), or said they leaned toward the Democratic party (see pid7others) in a follow-up question, and a 0 otherwise. Do the same thing for Republicans using the same two variables. Hint: the functions table() and class() are useful for determining which values a variable contains and what type of vector it is, respectively.
+```{r, echo = TRUE}
+dd$dem <- ifelse(!is.na(dd$pid3) & dd$pid3 == "Democrat",1,
+                 ifelse(!is.na(dd$pid7others) & dd$pid7others == "Lean Democrat", 1, 0))
+
+dd$rep <- ifelse(!is.na(dd$pid3) & dd$pid3 == "Republican",1,
+                 ifelse(!is.na(dd$pid7others) & dd$pid7others == "Lean Republican", 1, 0))
+```
 
 3) For those labeled  "Skipped" or "Not asked" on pid3, code them as NA. For those labeled "Not sure", "Skipped" or "Not asked" on pid7others, code them as NA as well. How many respondents that identify as Democrats and Republicans, respectively, do you identify in the dataset?
 
+```{r, echo=TRUE}
+dd$dem <- ifelse(dd$pid3 %in% c("Skipped", "Not asked") & !is.na(dd$pid3), NA, dd$dem)
+dd$rep <- ifelse(dd$pid3 %in% c("Skipped", "Not asked") & !is.na(dd$pid3), NA, dd$rep)
+dd$dem <- ifelse(dd$pid7others %in% c("Not sure", "Skipped", "Not asked") & !is.na(dd$pid7others), NA, dd$dem)
+dd$rep <- ifelse(dd$pid7others %in% c("Not sure", "Skipped", "Not asked") & !is.na(dd$pid7others), NA, dd$rep)
+sum(dd$dem, na.rm = TRUE)
+sum(dd$rep, na.rm = T)
+```
 4) Make a new column in dd, age, that is a numeric equal to the respondent's age in years. Do this using the variable birthyr, which is a factor vector that conveys the respondent's year of birth. You may need to change the class of birthyr in order to accomplish this. Note that this survey was conducted in 2012. What is the mean age of all respondents in the dataset?
+
+```{r, echo=TRUE}
+dd$age = as.integer(dd$birthyr)
+mean(dd$age)
+```
 
 5) Create a new column---"female"---that equals 1 if the respondent is a female and 0 if the respondent is a male using the variable "gender". What percent of the respondents is female?
 
+```{r, echo=TRUE}
+dd$female <- ifelse(dd$gender == "Female", 1,0)
+sum(dd$female)/length(dd$female)*100
+```
+
 6) Using the variable educ, create a column, BA, that equals 1 if the respondent has a Bachelor's Degree or higher, and 0 otherwise. Be mindful of the class of the original variable. Make sure BA ends up as numeric. How many respondents hold at least a B.A.?
 
+```{r, echo=TRUE}
+dd$BA <- ifelse(dd$educ %in% c("4-year", "Post-grad"),1,0)
+```
+
 7) Construct a variable obama, that equals 1 if the respondent voted for President Obama, 0 if they voted for someone else, and NA if the did not vote or did not answer the question or are not sure. Use the variable CC410a. What percent of respondents voted for someone *other than* President Obama?
+
+```{r, echo=TRUE}
+dd$obama <- ifelse(dd$CC410a == "Barack Obama (Democratic)" & !is.na(dd$CC410a), 1, ifelse(dd$CC410a %in% c("Mitt Romney (Republican)", "Other") & !is.na(dd$CC410a),0,NA))
+length(which(dd$obama==0))/length(dd$obama)*100
+```
 
 
 ### Problem 2: Writing an OLS Function using Matrix Algebra
 
 1) Construct a matrix called X where the columns are: a vector of 1's of the same length as the variables you just created, as well as the dem, rep, female, age, and BA variables---*in that order*. Make sure the column names remain the same after constructing the matrix; label the column of 1's "constant".
 
+```{r, echo = TRUE}
+ones <- rep(1, length(dd$dem))
+X <- cbind(ones, dd$dem, dd$rep, dd$female, dd$age, dd$BA)
+colnames(X) <- (c("ones", "dem", "rep", "female", "age", "BA"))
+```
+
 2) Construct a *matrix* Y that is just one column, obama. Again, make sure the column name remains the same.
+
+```{r, echo=TRUE}
+Y = matrix(data = c(dd$obama), nrow = length(dd$obama), ncol = 1, byrow=T)
+colnames(Y) <- c("obama")
+```
 
 3) Use your X and Y matrices to implement the OLS estimator---$(X'X)^{-1}X'Y$---to estimate the unknown parameters (the constant term and the betas) in the following regression:
 
 $$obama = constant + \beta_1\text{dem} + \beta_2\text{rep} + \beta_3\text{female} + \beta_4\text{age}  +  \beta_5\text{ba} +\epsilon$$
+```{r, echo=TRUE}
+beta <- solve(X %*% t(X))%*%t(X)%*%Y
 
+```
 4) Using what we know about how to write functions and how to perform matrix operations in R, write a function called "OLS.est" that takes as arguments a data frame, a character vector of the names of independent variables, and a character vector with the name of the dependent variable. Have the function subset the data frame to the variables of interest, compute the OLS estimator $(X'X)^{-1}X'Y$, and return a kx1 matrix of estimated coefficients called "beta.hat". Make sure that by default the function renders the first column of X a constant vector of 1's, and give this column the name "(Intercept)" (the constant is often referred to as the intercept, and it is good to practice working with column names). Note: if an observation (a row) is missing on either an X variable or Y, that entire row cannot be included in the OLS model and must be deleted. Make sure your function accounts for this fact. Also, recall that the first column of the matrix of independent variables should be the constant term. You will have to add it inside the function.
 
+```{r, echo=TRUE}
+OLS.est <- function(df, I_vars, dependent){
+  Intercept <- rep(1, length(df$I_vars[1]))
+  X <- cbind(Intercept)
+  for(i in I_vars){
+    X <- cbind(X, df$I_vars[i])
+  }
+  Y <- matrix(data = c(df$dependent[1]), nrow = length(df$dependent[1]), ncol = 1, byrow=T)
+  
+  beta.hat <- solve(X %*% t(X))%*%t(X)%*%Y
+  
+  return(beta.hat)
+}
+  
+```
 
 ### Problem 3: Applying your function to actual data
 
 1) Apply your new function to the data frame "dd" (that is, the whole CCES data frame that you pre-processed in Problem 1. Do not alter it any further prior to passing it to the function and have the subsetting to relevant variables occur within the function). Again, estimate the unknown parameters (the constant term and the betas) in the following regression:
 
 $$obama = constant + \beta_1\text{dem} + \beta_2\text{rep} + \beta_3\text{female} + \beta_4\text{age}  +  \beta_5\text{ba} +\epsilon$$
+```{r, echo = TRUE}
+beta.hat <- OLS.est(dd, c("dem", "rep", "female", "age", "BA"), c("obama"))
+beta.hat
+```
 
 2) Confirm these estimates are correct by estimating the same regression using the lm() function. Use the ? command or search online for how to use this function. Examples abound.
+
+```{r, echo=TRUE}
+summary(lm(dd$obama ~ dd$dem + dd$rep + dd$female + dd$age + dd$BA))
+```
 
 
 ### Problem 4
