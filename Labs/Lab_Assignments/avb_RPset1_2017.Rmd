@@ -1,14 +1,14 @@
 ---
 title: 'R Problem Set 1: Loops, Functions, and Matrix Algebra'
 author: "Ariel Boyarsky"
-email: "aboyarsky@uchciago.edu"
 date: 'Due date: September 12, 2017'
 output:
+  pdf_document:
+    toc: yes
   html_document:
     toc: yes
     toc_float: yes
-  pdf_document:
-    toc: yes
+email: aboyarsky@uchciago.edu
 ---
 
 ## Part 1 
@@ -281,6 +281,7 @@ sum(dd$female)/length(dd$female)*100
 
 ```{r, echo=TRUE}
 dd$BA <- ifelse(dd$educ %in% c("4-year", "Post-grad"),1,0)
+sum(dd$BA)
 ```
 
 7) Construct a variable obama, that equals 1 if the respondent voted for President Obama, 0 if they voted for someone else, and NA if the did not vote or did not answer the question or are not sure. Use the variable CC410a. What percent of respondents voted for someone *other than* President Obama?
@@ -299,6 +300,7 @@ length(which(dd$obama==0))/length(dd$obama)*100
 ones <- rep(1, length(dd$dem))
 X <- cbind(ones, dd$dem, dd$rep, dd$female, dd$age, dd$BA)
 colnames(X) <- (c("ones", "dem", "rep", "female", "age", "BA"))
+nrow(X)
 ```
 
 2) Construct a *matrix* Y that is just one column, obama. Again, make sure the column name remains the same.
@@ -306,27 +308,71 @@ colnames(X) <- (c("ones", "dem", "rep", "female", "age", "BA"))
 ```{r, echo=TRUE}
 Y = matrix(data = c(dd$obama), nrow = length(dd$obama), ncol = 1, byrow=T)
 colnames(Y) <- c("obama")
+length(Y)
 ```
 
 3) Use your X and Y matrices to implement the OLS estimator---$(X'X)^{-1}X'Y$---to estimate the unknown parameters (the constant term and the betas) in the following regression:
 
 $$obama = constant + \beta_1\text{dem} + \beta_2\text{rep} + \beta_3\text{female} + \beta_4\text{age}  +  \beta_5\text{ba} +\epsilon$$
 ```{r, echo=TRUE}
-beta <- solve(X %*% t(X))%*%t(X)%*%Y
+Y <- Y[rowSums(is.na(X)) == 0,]
+length(Y)
+X <- na.omit(X)
+nrow(X)
+
+Y = matrix(Y, ncol =1)
+
+X <- X[!is.na(Y),]
+Y <- Y[!is.na(Y),]
+
+
+length(Y)
+nrow(X)
+
+x.trans.x <- t(X) %*% X
+x.trans.x.inv <- solve(x.trans.x)
+x.trans.y <- t(X) %*% Y
+
+beta.hat <- x.trans.x.inv %*% x.trans.y
+
+beta.hat
 
 ```
 4) Using what we know about how to write functions and how to perform matrix operations in R, write a function called "OLS.est" that takes as arguments a data frame, a character vector of the names of independent variables, and a character vector with the name of the dependent variable. Have the function subset the data frame to the variables of interest, compute the OLS estimator $(X'X)^{-1}X'Y$, and return a kx1 matrix of estimated coefficients called "beta.hat". Make sure that by default the function renders the first column of X a constant vector of 1's, and give this column the name "(Intercept)" (the constant is often referred to as the intercept, and it is good to practice working with column names). Note: if an observation (a row) is missing on either an X variable or Y, that entire row cannot be included in the OLS model and must be deleted. Make sure your function accounts for this fact. Also, recall that the first column of the matrix of independent variables should be the constant term. You will have to add it inside the function.
 
 ```{r, echo=TRUE}
 OLS.est <- function(df, I_vars, dependent){
-  Intercept <- rep(1, length(df$I_vars[1]))
+  Intercept <- rep(1, length(df[[I_vars[1]]]))
   X <- cbind(Intercept)
-  for(i in I_vars){
-    X <- cbind(X, df$I_vars[i])
+  for(i in 1:length(I_vars)){
+    X <- cbind(X, df[[I_vars[i]]])
   }
-  Y <- matrix(data = c(df$dependent[1]), nrow = length(df$dependent[1]), ncol = 1, byrow=T)
+  #print(nrow(X))
+  #print(X)
+
   
-  beta.hat <- solve(X %*% t(X))%*%t(X)%*%Y
+  Y <- matrix(data = df[[dependent[1]]], nrow = length(df[[dependent[1]]]), ncol = 1, byrow=T)
+  # print(length(Y))
+  
+  Y <- Y[rowSums(is.na(X)) == 0,]
+  X <- na.omit(X)
+  
+  # print(length(Y))
+  # print(nrow(X))
+  
+  Y = matrix(Y, ncol = 1)
+  
+  X <- X[!is.na(Y),]
+  Y <- Y[!is.na(Y),]
+  
+  #print(length(Y))
+  #print(nrow(X))
+  
+  x.trans.x <- t(X) %*% X
+  x.trans.x.inv <- solve(x.trans.x)
+  x.trans.y <- t(X) %*% Y
+  
+  beta.hat <- x.trans.x.inv %*% x.trans.y
   
   return(beta.hat)
 }
@@ -356,10 +402,152 @@ You will notice that the summary output of the lm() function contained standard 
 
 1) Revise your OLS.est function to calculate an additional object, a one-column matrix "e" that is equal to $Y - X \hat{\beta}$. This is a vector of residuals, which are estimates of the errors in the model. Still working inside the function, generate a new object which is equal to the sum of the squares of each of the elements in "e", which should be a constant. Call this new object e.2 and make sure it is of class numeric. Have the function return beta.hat and e.2. Since you are returning multiple objects, have the output of the function be a list. Use your function to compute the same regression model as before.
 
+```{r, echo=TRUE}
+OLS.est <- function(df, I_vars, dependent){
+  Intercept <- rep(1, length(df[[I_vars[1]]]))
+  X <- cbind(Intercept)
+  for(i in 1:length(I_vars)){
+    X <- cbind(X, df[[I_vars[i]]])
+  }
+  #print(nrow(X))
+  #print(X)
+
+  
+  Y <- matrix(data = df[[dependent[1]]], nrow = length(df[[dependent[1]]]), ncol = 1, byrow=T)
+  # print(length(Y))
+  
+  Y <- Y[rowSums(is.na(X)) == 0,]
+  X <- na.omit(X)
+  
+  # print(length(Y))
+  # print(nrow(X))
+  
+  Y = matrix(Y, ncol = 1)
+  
+  X <- X[!is.na(Y),]
+  Y <- Y[!is.na(Y),]
+  
+  #print(length(Y))
+  #print(nrow(X))
+  
+  x.trans.x <- t(X) %*% X
+  x.trans.x.inv <- solve(x.trans.x)
+  x.trans.y <- t(X) %*% Y
+  
+  beta.hat <- x.trans.x.inv %*% x.trans.y
+  
+  e <- Y - (X %*% beta.hat)
+  e.2 <- sum(e^2)
+  
+  return(list(beta = beta.hat, sse = e.2))
+}
+reg <- OLS.est(dd, c("dem", "rep", "female", "age", "BA"), c("obama"))
+reg
+```
+
 2) Revise the function yet again to output a new $kxk$ matrix, "var.cov", that is equal to $\frac{e.2}{n-k}*(X'X)^{-1}$, where $n$ is the number of observations that were included in the regression, $k$ is the number of estimated parameters, including the constant, and $X$ is the matrix of independent variables included in the regression. 
+
+```{r, echo=TRUE}
+OLS.est <- function(df, I_vars, dependent){
+  Intercept <- rep(1, length(df[[I_vars[1]]]))
+  X <- cbind(Intercept)
+  for(i in 1:length(I_vars)){
+    X <- cbind(X, df[[I_vars[i]]])
+  }
+  #print(nrow(X))
+  #print(X)
+
+  
+  Y <- matrix(data = df[[dependent[1]]], nrow = length(df[[dependent[1]]]), ncol = 1, byrow=T)
+  # print(length(Y))
+  
+  Y <- Y[rowSums(is.na(X)) == 0,]
+  X <- na.omit(X)
+  
+  # print(length(Y))
+  # print(nrow(X))
+  
+  Y = matrix(Y, ncol = 1)
+  
+  X <- X[!is.na(Y),]
+  Y <- Y[!is.na(Y),]
+  
+  #print(length(Y))
+  #print(nrow(X))
+  
+  x.trans.x <- t(X) %*% X
+  x.trans.x.inv <- solve(x.trans.x)
+  x.trans.y <- t(X) %*% Y
+  
+  beta.hat <- x.trans.x.inv %*% x.trans.y
+  
+  e <- Y - (X %*% beta.hat)
+  e.2 <- sum(e^2)
+  
+  #$\frac{e.2}{n-k}*(X'X)^{-1}$
+  #print(e.2/(nrow(X)-nrow(beta.hat)))
+  
+  var.covar <- (e.2/(nrow(X)-nrow(beta.hat))) * x.trans.x.inv 
+  
+  return(list(beta = beta.hat, sse = e.2, var.covar = var.covar))
+}
+reg <- OLS.est(dd, c("dem", "rep", "female", "age", "BA"), c("obama"))
+reg
+```
 
 3) Revise your function one last time to output an additional object, a vector called "ses", that is equal to the square root of the diagonal elements of var.cov (you may find diag() helpful for this question). So now, the function should output beta.hat, e.2, var.cov and ses in a list. Compare the ses vector to the standard errors estimated by lm() above. Are they the same?
 
+```{r, echo=TRUE}
+OLS.est <- function(df, I_vars, dependent){
+  Intercept <- rep(1, length(df[[I_vars[1]]]))
+  X <- cbind(Intercept)
+  for(i in 1:length(I_vars)){
+    X <- cbind(X, df[[I_vars[i]]])
+  }
+  #print(nrow(X))
+  #print(X)
+
+  
+  Y <- matrix(data = df[[dependent[1]]], nrow = length(df[[dependent[1]]]), ncol = 1, byrow=T)
+  # print(length(Y))
+  
+  Y <- Y[rowSums(is.na(X)) == 0,]
+  X <- na.omit(X)
+  
+  # print(length(Y))
+  # print(nrow(X))
+  
+  Y = matrix(Y, ncol = 1)
+  
+  X <- X[!is.na(Y),]
+  Y <- Y[!is.na(Y),]
+  
+  #print(length(Y))
+  #print(nrow(X))
+  
+  x.trans.x <- t(X) %*% X
+  x.trans.x.inv <- solve(x.trans.x)
+  x.trans.y <- t(X) %*% Y
+  
+  beta.hat <- x.trans.x.inv %*% x.trans.y
+  
+  e <- Y - (X %*% beta.hat)
+  e.2 <- sum(e^2)
+  
+  #$\frac{e.2}{n-k}*(X'X)^{-1}$
+  
+  var.covar <- (e.2/(nrow(X)-nrow(beta.hat))) * x.trans.x.inv 
+  
+  ses = list()
+  for(i in 1:length(diag(var.covar))){
+    ses <- append(ses, sqrt(diag(var.covar)[i]))
+  }
+  
+  return(list(beta = beta.hat, sse = e.2, var.covar = var.covar, ses = ses ))
+}
+reg <- OLS.est(dd, c("dem", "rep", "female", "age", "BA"), c("obama"))
+reg
+```
 
 ### BONUS: For your own enjoyment
 
@@ -367,9 +555,21 @@ Note, if you find this daunting, don't worry.  Other courses will cover regressi
 
 1) Interpret the coefficients on BA and female, respectively.
 
+A: BA is positive indicting that there is a positive correlation between people that have attained a college degree or higher and voting for obama. Similarly, female is positive indicating that there is a positive correlation between being female and voting for obama. Both these terms are significant to 0.001. 
+
 2) What is the predicted value of Y (whether or not someone voted for Obama) for an 95-year-old Democrat who is female and went to college? What about a 50-year-old Republican who is male and went to college? Hint: refer back to the equation for the model we estimated, and note that you now have estimated values for the unknown parameters.
 
+```{r, echo=TRUE}
+i <- matrix(c(1,1,0,1,95,1), ncol=6, nrow=1)
+i %*% beta.hat
+
+i <- matrix(c(1,0,1,0,50,1), ncol=6, nrow=1)
+i %*% beta.hat
+```
+
 3) For both predictions, do such people exist in the data set? If so, how many?
+
+A: Well, I hope they exist in the data set because generally one should not use a linear regression to estimate variables outside your range of data. While this may be OK in this case, as the points do not lie to far outside the range of the data set, it is not good practice. That said, the women's age lies pretty far outside the max age (77) in the set, while man fits pretty well into our data set. Hence, we may want to be skeptikal of our results with the women... we did get a value > 1 after all. 
 
 
 
